@@ -1,9 +1,9 @@
 # boot-python/pyproject.toml
 [tool.poetry]
 name = "boot-python"
-version = "0.1.0"
+version = "0.1.0-alpha"
 description = "A prompt-provider plugin for generating Python projects with boot-code."
-authors = ["Your Name <you@example.com>"]
+authors = ["Bordumb <bordumbb@gmail.com>"]
 readme = "README.md"
 # Add this line to tell Poetry where to find the package source code.
 packages = [{include = "src"}]
