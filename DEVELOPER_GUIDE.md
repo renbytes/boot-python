@@ -24,14 +24,12 @@ This guide provides technical details for developing, testing, and troubleshooti
    poetry run python -m grpc_tools.protoc -I./proto --python_out=./src/generated --grpc_python_out=./src/generated ./proto/plugin.proto
    ```
 
-> Note: `gRPC`'s generated files often incorrectly import using `import plugin_pb2 as plugin__pb2`, so should be manually switched to `from . import plugin_pb2 as plugin__pb2`
-
 ## 2. The Handshake Contract
 
 `boot-code` discovers and communicates with plugins based on a simple, strict contract:
 
 * **First line on `stdout`**: Must be the handshake string in the format `1|1|tcp|HOST:PORT|grpc`.
-* **All other output**: All logs, warnings, and errors **must** be sent to `stderr`. This keeps `stdout` clean so the handshake is not corrupted. The `main.py` file is already configured to do this.
+* **All other output**: All logs, warnings, and errors must be sent to `stderr`. This keeps `stdout` clean so the handshake is not corrupted. The `main.py` file is already configured to do this.
 
 ## 3. Testing the Plugin Locally
 
@@ -109,4 +107,26 @@ The most common issue is that the plugin's virtual environment is not in your sh
 
 * **`Invalid handshake` / `not enough values to unpack`**: This means the plugin wrote something to `stdout` before the handshake string. Ensure all logging and print statements in the Python code use `logging` or write to `sys.stderr`.
 
-* **`ModuleNotFoundError`**: If the plugin fails with this error, it's likely an issue with relative vs. absolute imports within the plugin's `src` directory. Ensure all intra-package imports use the relative `.` syntax (e.g., `from .server import ...`).
+* **`ModuleNotFoundError`**: If the plugin fails with this error, it's likely an issue with relative vs. absolute imports within the `src` directory. Ensure all intra-package imports use the relative `.` syntax (e.g., `from .server import ...`).
+
+## 7. Creating a Release
+
+Unlike the Rust plugin which is a compiled binary, the Python plugin is an interpreted package. The standard way to create a release is to build a source distribution (sdist) and a wheel (.whl).
+
+### Build the Release Artifacts
+
+1. **Run the Poetry build command**: From the root of your `boot-python` project, run:
+
+   ```bash
+   poetry build
+   ```
+
+2. **Find the artifacts**: This command will create a `dist/` directory containing two files:
+   * `boot-python-0.1.0.tar.gz` (the source distribution)
+   * `boot_python-0.1.0-py3-none-any.whl` (the wheel)
+
+### Upload to GitHub
+
+Create a new release on your plugin's GitHub repository and upload both the `.tar.gz` and `.whl` files from your `dist/` directory as the release assets.
+
+**Note**: The `boot plugin install` command is designed to download compiled binaries and will not use these Python artifacts. This release process is the standard way to version and distribute Python packages for sharing and potential future installation via `pip`.
