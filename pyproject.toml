@@ -1,0 +1,32 @@
+# boot-python/pyproject.toml
+[tool.poetry]
+name = "boot-python"
+version = "0.1.0"
+description = "A prompt-provider plugin for generating Python projects with boot-code."
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+# Add this line to tell Poetry where to find the package source code.
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+# This section lists the libraries your plugin needs to run.
+python = "^3.9"
+# Core libraries for the gRPC server functionality.
+grpcio = "^1.60.0"
+protobuf = "^4.25.0"
+# Library for parsing the spec.toml file content.
+toml = "^0.10.2"
+
+[tool.poetry.group.dev.dependencies]
+# This section lists tools for development, like compiling protobuf files.
+grpcio-tools = "^1.60.0"
+
+[tool.poetry.scripts]
+# This defines the entry point for the executable. When a user runs `boot-python`,
+# it will execute the `main` function inside the `src/main.py` file.
+# This is how `boot-code` will start your plugin.
+boot-python = "src.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
