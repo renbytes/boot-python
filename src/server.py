@@ -7,7 +7,7 @@ import toml
 
 # Import the generated protobuf files.
 # Note: These will show as errors until we compile the .proto file.
-from .generated import plugin_pb2, plugin_pb2_grpc
+from src.generated import plugin_pb2, plugin_pb2_grpc
 
 
 def get_prompts_path() -> Path:

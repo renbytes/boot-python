@@ -10,16 +10,21 @@ packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 # This section lists the libraries your plugin needs to run.
-python = "^3.9"
+python = ">=3.11"
 # Core libraries for the gRPC server functionality.
-grpcio = "^1.60.0"
-protobuf = "^4.25.0"
+grpcio = "^1.74.0"
+protobuf = "==6.31.1"
 # Library for parsing the spec.toml file content.
 toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 # This section lists tools for development, like compiling protobuf files.
-grpcio-tools = "^1.60.0"
+grpcio-tools = "^1.74.0"
+pytest = ">=7.0.0"
+pytest-asyncio = ">=0.21.0"
+black = ">=24.0.0"
+mypy = ">=1.0.0"
+ruff = ">=0.1.0"
 
 [tool.poetry.scripts]
 # This defines the entry point for the executable. When a user runs `boot-python`,

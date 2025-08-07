@@ -8,9 +8,6 @@ __pycache__/
 env/
 venv/
 
-# gRPC / Protobuf
-src/generated/
-
 # Distribution / packaging
 dist/
 build/
@@ -21,3 +18,4 @@ eggs/
 # Logs
 *.log
 boot_debug.log
+all_code_boot_python.txt
