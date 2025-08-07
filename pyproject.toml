@@ -4,27 +4,26 @@ version = "0.1.1-alpha"
 description = "Prompt-provider plugin for boot-code (Python)."
 authors = ["Bordumb <bordumbb@gmail.com>"]
 readme = "README.md"
-packages = [
-  { include = "boot_python", from = "src" }
-]
+packages = [ { include = "boot_python" } ]
 
-# Include runtime assets (prompts) and optionally proto (dev)
+# Include runtime assets in the sdist + wheel
+# NOTE: gRPC stubs must be committed and included in the package tree under boot_python/generated/
 include = [
-  { path = "prompts/**/*", format = "sdist" },
-  { path = "prompts/**/*", format = "wheel" },
-  # proto is not needed at runtime; include only if you want it in sdists:
-  { path = "proto/plugin.proto", format = "sdist" }
+  { path = "boot_python/prompts/**", format = "wheel" },
+  { path = "boot_python/prompts/**", format = "sdist" }
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.10,<3.13"
 grpcio = "^1.74.0"
-protobuf = "==6.31.1"
-tomli = { version = "^2.0.1", python = "<3.11" }  # for TOML parsing on Py<=3.10
+protobuf = "^4.25.0"
+# tomllib is stdlib on 3.11+, backfill for 3.10 users
+tomli = { version = "^2.0.1", python = "<3.11" }
 
 [tool.poetry.group.dev.dependencies]
-grpcio-tools = "^1.74.0"
 pytest = "^8.0.0"
+# Use grpcio-tools locally only if you ever need to re-generate stubs
+grpcio-tools = "^1.74.0"
 
 [tool.poetry.scripts]
 boot-python = "boot_python.main:main"
@@ -34,4 +33,6 @@ requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+# IMPORTANT: Don’t leak a src/ path into runtime; keep tests isolated.
+# Remove any pythonpath=["src"] entries to avoid reintroducing old import paths.
+addopts = "-q"
