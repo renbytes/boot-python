@@ -1,81 +1,60 @@
-# tests/test_main.py
 import logging
-import sys
-from unittest.mock import MagicMock, patch
+import os
+from unittest.mock import patch
 
-# We only need to mock the top-level 'generated' module to prevent
-# the initial ImportError during test discovery.
-sys.modules['src.generated'] = MagicMock()
+def test_handshake_and_logging(capsys, caplog, monkeypatch):
+    # Arrange: make main exit immediately after handshake (no blocking loop)
+    monkeypatch.setenv("BOOT_PYTHON_TEST_EXIT_AFTER_HANDSHAKE", "1")
 
-# Import the modules to be tested AFTER setting up the initial mock
-from src.main import main, serve
+    with patch("boot_python.main._pick_loopback_port", return_value=("127.0.0.1", 54321)), \
+         patch("boot_python.main.grpc.server") as mock_grpc_server, \
+         patch("boot_python.main.plugin_pb2_grpc") as mock_pb2_grpc, \
+         patch("boot_python.main.BootPluginServicer") as mock_servicer, \
+         caplog.at_level(logging.INFO):
 
+        # Import here (after patches/env) so collection doesn't trigger side effects
+        from boot_python.main import main as entry_main
 
-@patch('src.main.BootCodePluginServicer')
-@patch('src.main.grpc.server')
-def test_serve_handshake_and_logging(mock_grpc_server, mock_servicer, capsys, caplog):
-    """
-    Tests that the server performs the handshake correctly to stdout
-    and that logging messages are correctly sent to stderr.
-    """
-    # Arrange
-    mock_server_instance = mock_grpc_server.return_value
-    mock_server_instance.add_insecure_port.return_value = 54321
-    mock_server_instance.wait_for_termination.side_effect = KeyboardInterrupt
+        server_instance = mock_grpc_server.return_value
+        server_instance.add_insecure_port.return_value = 54321
 
-    # Act
-    with caplog.at_level(logging.INFO):
-        serve()
+        # Act
+        entry_main()
 
-    # Assert stdout (Handshake)
-    captured_streams = capsys.readouterr()
-    expected_handshake = "1|1|tcp|127.0.0.1:54321|grpc\n"
-    assert captured_streams.out == expected_handshake
+    # Assert stdout handshake
+    out, _ = capsys.readouterr()
+    assert out == "1|1|tcp|127.0.0.1:54321|grpc"
 
-    # Assert stderr (Logging)
-    assert "Plugin server started on 127.0.0.1:54321" in caplog.text
-    assert "Server shutting down." in caplog.text
+    # Assert logging to stderr
+    assert "boot-python started on 127.0.0.1:54321" in caplog.text
+    assert "Exiting immediately due to BOOT_PYTHON_TEST_EXIT_AFTER_HANDSHAKE=1" in caplog.text
+    assert "boot-python stopped" in caplog.text
 
-
-# FIX: Add a specific patch for the object being called.
-@patch('src.main.plugin_pb2_grpc')
-@patch('src.main.BootCodePluginServicer')
-@patch('src.main.grpc.server')
-def test_serve_grpc_server_setup(mock_grpc_server, mock_servicer, mock_plugin_grpc):
-    """
-    Tests that the gRPC server is initialized and configured correctly.
-    """
-    # Arrange
-    mock_server_instance = mock_grpc_server.return_value
-    mock_server_instance.add_insecure_port.return_value = 12345
-    mock_server_instance.wait_for_termination.side_effect = KeyboardInterrupt
-
-    # Act
-    serve()
-
-    # Assert
-    mock_grpc_server.assert_called_once()
-    mock_servicer.assert_called_once()
-
-    # FIX: Assert the call on the new, correct mock object.
-    mock_plugin_grpc.add_BootCodePluginServicer_to_server.assert_called_once_with(
-        mock_servicer.return_value, mock_server_instance
+    # Wiring
+    mock_pb2_grpc.add_BootCodePluginServicer_to_server.assert_called_once_with(
+        mock_servicer.return_value, mock_grpc_server.return_value
     )
-    mock_server_instance.add_insecure_port.assert_called_with("127.0.0.1:0")
-    mock_server_instance.start.assert_called_once()
-    mock_server_instance.wait_for_termination.assert_called_once()
-    mock_server_instance.stop.assert_called_with(0)
+    server_instance.add_insecure_port.assert_called_once_with("127.0.0.1:54321")
+    server_instance.start.assert_called_once()
+    server_instance.stop.assert_called_once()
 
 
-def test_main_entry_point(mocker):
-    """
-    Tests that the main() entry point correctly calls the serve() function.
-    """
-    # Arrange
-    serve_spy = mocker.patch('src.main.serve')
+def test_grpc_server_setup(monkeypatch):
+    monkeypatch.setenv("BOOT_PYTHON_TEST_EXIT_AFTER_HANDSHAKE", "1")
 
-    # Act
-    main()
+    with patch("boot_python.main._pick_loopback_port", return_value=("127.0.0.1", 12345)), \
+         patch("boot_python.main.grpc.server") as mock_grpc_server, \
+         patch("boot_python.main.plugin_pb2_grpc") as mock_pb2_grpc, \
+         patch("boot_python.main.BootPluginServicer") as mock_servicer:
 
-    # Assert
-    serve_spy.assert_called_once()
+        from boot_python.main import main as entry_main
+        server_instance = mock_grpc_server.return_value
+
+        entry_main()
+
+    mock_pb2_grpc.add_BootCodePluginServicer_to_server.assert_called_once_with(
+        mock_servicer.return_value, server_instance
+    )
+    server_instance.add_insecure_port.assert_called_once_with("127.0.0.1:12345")
+    server_instance.start.assert_called_once()
+    server_instance.stop.assert_called_once()
